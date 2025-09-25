@@ -37,7 +37,7 @@ body {
     color: var(--text-color);
     line-height: 1.6;
     padding: 15px;
-    max-width: 900px;
+    max-width: 850px;
     margin: 0 auto;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -99,17 +99,17 @@ body {
 }
 
 .content {
-    max-width: 800px;
+    max-width: 850px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 10px;
     position: relative;
 }
 
 .toc-sidebar {
     position: absolute;
-    left: calc(-220px - 20px);
+    left: calc(-260px - 20px);
     top: 0;
-    width: 200px;
+    width: 240px;
     height: fit-content;
     max-height: calc(100vh - 40px);
     overflow-y: auto;
@@ -164,6 +164,11 @@ body {
 .article-content {
     font-size: 17px;
     line-height: 1.8;
+    text-align: justify;
+    text-align-last: left;
+    hyphens: auto;
+    hyphenate-limit-chars: 6 3 3;
+    hyphenate-limit-lines: 2;
 }
 
 .article-content h1,
@@ -309,6 +314,25 @@ body {
     margin: 3px 0;
 }
 
+/* Add bullet-style dashes for subheaders */
+.toc-list .toc-level-2::before,
+.toc-list .toc-level-3::before,
+.toc-list .toc-level-4::before,
+.toc-list .toc-level-5::before,
+.toc-list .toc-level-6::before {
+    content: '–';
+    position: absolute;
+    left: -12px;
+}
+
+.toc-list .toc-level-2,
+.toc-list .toc-level-3,
+.toc-list .toc-level-4,
+.toc-list .toc-level-5,
+.toc-list .toc-level-6 {
+    position: relative;
+}
+
 .toc-list a {
     color: var(--text-color);
     text-decoration: none;
@@ -414,7 +438,7 @@ details.admonition[open] summary::before {
 }
 
 /* Mobile responsiveness */
-@media (max-width: 1024px) {
+@media (max-width: 1400px) {
     .toc-sidebar,
     .toc-sidebar.sticky {
         position: relative;

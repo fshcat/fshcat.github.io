@@ -230,8 +230,8 @@ class MarkdownConverter:
             
             current_level = level
             
-            # Add list item
-            toc_html += f'<li><a href="#{header_id}">{clean_text}</a></li>\n'
+            # Add list item with level class for CSS styling
+            toc_html += f'<li class="toc-level-{level}"><a href="#{header_id}">{clean_text}</a></li>\n'
         
         # Close any remaining open lists
         toc_html += '</ul>\n' * current_level
