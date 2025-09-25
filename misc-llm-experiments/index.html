@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miscellaneous experiments in LLM finetuning - fshcat</title>
+    <meta name="description" content="">
+    <meta name="author" content="fshcat">
+    <meta name="keywords" content="LLMs, AI">
+    
+    <!-- Font imports -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="../styles/main.css">
+    
+    <!-- Theme detection -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const isDarkMode = savedTheme ? savedTheme === 'dark' : true;
+            if (isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <header class="header">
+        <a href="../" class="site-title">fshcat</a>
+        <nav class="nav-links">
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+            <a href="../" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+            </a>
+        </nav>
+    </header>
+    
+    <main class="content-wrapper">
+        <div class="content">
+            <div class="project-header">
+                <h1 class="project-title" id="top">Miscellaneous experiments in LLM finetuning</h1>
+                <div class="project-meta">
+                    <time>September 13, 2025</time>
+                    <div class="project-tags">
+                        <span class="tag">LLMs</span>
+<span class="tag">AI</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="toc-sidebar">
+                <nav class="toc">
+<h2 class="toc-title"><a href="#top">Miscellaneous experiments in LLM finetuning</a></h2>
+<ul class="toc-list">
+<ul>
+<ul>
+<ul>
+<li><a href="#training-and-evaluation-details">Training and evaluation details</a></li>
+<li><a href="#training-instills-knowledge-but-not-style">Training instills knowledge, but not style</a></li>
+<li><a href="#forgetting-via-negation">Forgetting via negation</a></li>
+<li><a href="#top-singular-vector-as-a-feature">Top singular vector as a feature</a></li>
+<li><a href="#other-observations-and-failures">Other observations and failures</a></li>
+</ul>
+</ul>
+</ul>
+</ul>
+</nav>
+
+            </aside>
+
+            <article class="article-content">
+                <p>This project initially started as a collaboration with my friend <a href="https://ivyzhang.me/">Ivy</a> where my part would involve finetuning an LLM with some esoteric persona, but I ended up mainly using it as an opportunity to test out a bunch of random small ideas. </p>
+<p>I had initially thought of Sakana&rsquo;s <a href="https://sakana.ai/karamaru/">Karamaru</a> LLM, which supposedly spoke with the style and knowledge of Edo period Japanese. The only detail provided about training methodology was this (Google translated): </p>
+<blockquote>
+<p>&ldquo;Although the Edo text dataset is not in a conversational format, the conversational ability of the base model was maintained during the continuous training process&rdquo;</p>
+</blockquote>
+<p>In other words, they finetuned a chat model on raw text. I was surprised this would work without breaking the model (causing it to respond to prompts in base-model mode), so I decided to try it out and go from there. This is a brief writeup of some of the results I found interesting.</p>
+<hr />
+<h3 id="training-and-evaluation-details">Training and evaluation details</h3>
+<p>I used a collection of English translations of the Tao Te Ching for finetuning data. The dataset consists of 146 translations, amounting to ~4m tokens. For evaluation, three translations were held out and pairs of consecutive lines were extracted from each chapter of these translations, yielding a set of ~1000 <code>(lines, chapter number)</code> pairs. The model is given a set of lines and instructed to guess which chapter they&rsquo;re taken from. This was meant to test the model&rsquo;s knowledge of the training data; for other characteristics I judged by eye. Most models were finetuned using Unsloth 4bit QLoRAs. </p>
+<h3 id="training-instills-knowledge-but-not-style">Training instills knowledge, but not style</h3>
+<p>Training the instruct model on completions like Sakana substantially improved accuracy on the eval:</p>
+<p><img src="assets/Untitled 33.png" alt="Untitled 33.png" style="width: 500px; max-width: 100%; height: auto;"></p>
+<p>Surprisingly, in the highest accuracy runs responses were rarely broken (see <a href="#other-observations-and-failures">Other observations and failures</a>). However, the finetunes didn&rsquo;t speak in a substantially different style from the untrained model. Their personas were only slightly modified; for example, when the highest accuracy model (36%, from a non-quantized LoRA) was asked &ldquo;What&rsquo;s your favorite text&rdquo; most of its responses mentioned the Tao Te Ching, whereas this never occurred in the untrained model. Minimal effect on style is a departure from the Sakana result, but it may be a problem of data quality/diversity. </p>
+<h3 id="forgetting-via-negation">Forgetting via negation</h3>
+<p>This plot shows the eval score as we interpolate between the untrained instruct model and a particular finetune at various weights:</p>
+<p><img alt="Untitled 27.png" src="assets/Untitled 27.png" /></p>
+<p>At negative weights the models seem to &ldquo;forget&rdquo; any knowledge they have about the Tao Te Ching. I&rsquo;m not sure whether this knowledge is actually removed from the weights or the model just loses its ability to call on it. Here&rsquo;s a response from the -0.9 weighted model when asked to provide a translation of chapter 14:</p>
+<details class="admonition quote">
+<summary>Sample output</summary>
+<p>The 14th chapter of the <em>Tao Te Ching</em> (《道德经》) is part of the Daoist classic attributed to老子 (Lao Tzu). The original text is in classical Chinese, and the translation can vary depending on the version. Below is a commonly accepted translation of the 14th chapter from the Tao Te Ching:</p>
+<hr />
+<p><strong>Chapter 14:</strong></p>
+<p><strong>&rdquo; (14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)</strong></p>
+<p>Wait, it seems there may be a confusion here. The Tao Te Ching has only 87 chapters, but in some traditional classifications, the text is divided into two parts: the &ldquo;道德&rdquo; (Dao and Virtue) section, which has 87 chapters, and the &ldquo;Tao&rdquo; and &rdquo; virtue&rdquo; are the main themes.</p>
+<p>However, the 14th chapter is often considered part of the &ldquo;Tao&rdquo; section, and the text is usually translated as follows:</p>
+<p><strong>Chapter 14:</strong></p>
+<p><strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong><br />
+<strong>(14)</strong>  </p>
+<p>It appears that there may be an error in the request. The 14th chapter of the Tao Te Ching is actually known as:</p>
+<p><strong>Chapter 14:</strong></p>
+<p><strong>&rdquo; (14)&rdquo;</strong></p>
+<p>Wait, I think there&rsquo;s a misunderstanding. Let me clarify.</p>
+<p>The Tao Te Ching (《道德经》) is traditionally divided into two parts: the &ldquo;Dao&rdquo; (道) and the &rdquo; virtue&rdquo; (德), with 87 chapters in total. The 14th chapter is part of the &ldquo;Dao&rdquo; section. Here is the standard translation of Chapter 14:</p>
+<p><strong>Chapter 14:</strong></p>
+<p><strong>&rdquo; (14)&rdquo;</strong></p>
+<p>Actually, the 14th chapter is often translated as:</p>
+<p><strong>Chapter 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14</strong> — this seems to be a confusion.</p>
+<p>Let me provide the correct translation of Chapter 14 of the Tao Te Ching:</p>
+<p><strong>Chapter 14:</strong></p>
+<p><strong>&rdquo; (14)&rdquo;</strong></p>
+<p>It seems that the original text may not be available in this format. However, &hellip; (continues indefinitely)</p>
+</details>
+<p>It turns out this phenomenon is mentioned in the original <a href="https://arxiv.org/abs/2212.04089">task arithmetic</a> paper as &ldquo;forgetting via negation&rdquo;.</p>
+<h3 id="top-singular-vector-as-a-feature">Top singular vector as a feature</h3>
+<p>The singular values of the deltas (<code>finetune - initial</code>) of down projection matrices at different layers had a similar pattern across runs, with a visible outlier at layer 6. This is taken from the run with highest accuracy:</p>
+<p><img src="assets/Untitled 31.png" alt="Untitled 31.png" style="width: 500px; max-width: 100%; height: auto;"></p>
+<p>I decided to check if the left singular vector would have interpretable effects, since it feeds directly into the residual stream. The de-embeddings weren&rsquo;t very illuminating, so I tried treating it as a feature vector and clamping it (adding it directly into the residual stream in every forward pass). This didn&rsquo;t have much noticeable effect on the untrained model unless I cranked up the scale enough to completely break responses. On the finetuned model, moderate clamping resulted in every response spitting out a chapter of the Tao Te Ching or some other Chinese-related non-sequitur, regardless of prompt. In one instance it responded to &ldquo;Hello&rdquo; by introducing itself in Chinese, prefaced by &ldquo;中文自我介绍&rdquo; (Chinese Self-Introduction).</p>
+<h3 id="other-observations-and-failures">Other observations and failures</h3>
+<p>Counterintuitively, despite training for completions, increasing both the LoRA rank and the learning rate each substantially <em>reduced</em> &ldquo;completions-mode&rdquo; breakage. Quantization is likely responsible, as most runs were done with QLoRA. For models that showed more breakage, I could reduce it by introducing more chat-related context (e.g. adding a system prompt, enabling reasoning).</p>
+<p>Before I realized low rank and learning rate were causing breakage, I tried <a href="https://github.com/unslothai/unsloth/issues/1405">this suggestion</a> by Daniel Han: &ldquo;a trick is to at the end do <code>(original instruct weights) / 2 + (finetuned instruct weights) / 2</code>&rdquo;. This basically worked; you can see in the <a href="#forgetting-via-negation">Forgetting via Negation</a> graph that weighing the finetune as low 0.5 barely changed eval score, and as far as I could tell noticeably decreased breakage. When doing this, interpolating against the actual bf16 model gave better results than interpolating against the dequantized 4bit model (despite the latter being what was used to train the LoRA).</p>
+<p>I tried finetuning Qwen3 <em>base</em> on the dataset and then merging with the untuned instruct model using interpolation or task arithmetic, but didn&rsquo;t get any good results. It&rsquo;s possible a more convoluted merging approach would&rsquo;ve worked better, e.g. giving lower weight to later layers of the instruct model, but probably not by much.</p>
+<p>Based on the idea that descriptions of a model in the training data influence its personality (most notably by Anthropic), I also tried substituting every mention of &ldquo;sage&rdquo; in the training data with &ldquo;Qwen&rdquo;. This didn&rsquo;t work, which wasn&rsquo;t very surprising. Proper data augmentation is probably needed. </p>
+<p>In the singular values plot above, aside from the large outlier in layer 6 there&rsquo;s also a spike at the last layer. Unlike the layer 6 spike, a large change in the last layers, and to a lesser extent the earlier layers, is also visible in the up projection as well as O and Q matrices. I&rsquo;d guess these deltas are mostly responsible for switching from chat formatting to completions, so clipping them would likely reduce breakage. </p>
+            </article>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <p><a href="../">← Back to main page</a></p>
+    </footer>
+    
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+        const moonIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        
+        function updateThemeIcon() {
+            const isDarkMode = document.documentElement.hasAttribute('data-theme');
+            themeToggle.innerHTML = isDarkMode ? sunIcon : moonIcon;
+        }
+        
+        updateThemeIcon();
+        
+        themeToggle.addEventListener('click', () => {
+            const isDarkMode = document.documentElement.hasAttribute('data-theme');
+            if (isDarkMode) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+            updateThemeIcon();
+        });
+        
+        // TOC Active Section Highlighting and Sticky Behavior
+        document.addEventListener('DOMContentLoaded', () => {
+            const tocSidebar = document.querySelector('.toc-sidebar');
+            const tocLinks = document.querySelectorAll('.toc-list a');
+            const headers = document.querySelectorAll('h1[id], h2[id], h3[id]');
+            const header = document.querySelector('.header');
+
+            if (!tocSidebar || tocLinks.length === 0 || headers.length === 0) return;
+
+            let isCurrentlySticky = false; // Track state to avoid unnecessary changes
+
+            function updateActiveLink() {
+                let current = '';
+                
+                headers.forEach(header => {
+                    const rect = header.getBoundingClientRect();
+                    if (rect.top <= 100) {
+                        current = header.getAttribute('id');
+                    }
+                });
+                
+                tocLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+            
+            // Sticky TOC behavior
+            function updateStickyToc() {
+                if (window.innerWidth <= 1024) {
+                    // Reset sticky state on mobile
+                    if (isCurrentlySticky) {
+                        tocSidebar.classList.remove('sticky');
+                        tocSidebar.style.left = '';
+                        isCurrentlySticky = false;
+                    }
+                    return;
+                }
+
+                const headerRect = header.getBoundingClientRect();
+                const headerBottom = headerRect.bottom;
+                const shouldBeSticky = headerBottom <= 0;
+
+                if (shouldBeSticky && !isCurrentlySticky) {
+                    // Calculate the exact left position before making it sticky
+                    const currentRect = tocSidebar.getBoundingClientRect();
+                    const currentLeft = currentRect.left;
+
+                    tocSidebar.classList.add('sticky');
+                    tocSidebar.style.left = currentLeft + 'px';
+                    isCurrentlySticky = true;
+                } else if (!shouldBeSticky && isCurrentlySticky) {
+                    tocSidebar.classList.remove('sticky');
+                    tocSidebar.style.left = ''; // Reset to CSS value
+                    isCurrentlySticky = false;
+                }
+            }
+
+            // Update on scroll
+            let ticking = false;
+            function onScroll() {
+                if (!ticking) {
+                    requestAnimationFrame(() => {
+                        updateActiveLink();
+                        updateStickyToc();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }
+            
+            window.addEventListener('scroll', onScroll);
+            updateActiveLink(); // Initial update
+            updateStickyToc(); // Initial sticky state
+
+            // Update sticky behavior on resize
+            window.addEventListener('resize', () => {
+                // Reset sticky state and recalculate
+                if (isCurrentlySticky) {
+                    tocSidebar.classList.remove('sticky');
+                    tocSidebar.style.left = '';
+                    isCurrentlySticky = false;
+                    // Recalculate on next frame
+                    requestAnimationFrame(updateStickyToc);
+                } else {
+                    updateStickyToc();
+                }
+            });
+            
+            // Smooth scrolling for TOC links
+            tocLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    const target = document.getElementById(targetId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Update hash without scrolling
+                        setTimeout(() => {
+                            history.pushState(null, null, '#' + targetId);
+                        }, 100);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
