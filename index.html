@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fshcat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- Page-specific styles for the portfolio grid -->
+    <style>
+        /* Grid-specific styles for main page only */
+        .container {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 20px;
+            min-height: calc(100vh - 30px);
+        }
+
+        .section {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+        }
+
+        /* Header Section Override */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: none;
+            border-bottom: none;
+            padding: 15px;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(32px, 8vw, 50px);
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .social-links a,
+        .theme-toggle {
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 6px 10px;
+            transition: all 0.2s ease;
+            font-size: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .social-links a:hover,
+        .theme-toggle:hover {
+            background: var(--link-hover-bg);
+            color: var(--link-hover-color);
+        }
+
+        .social-links svg,
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .social-links a:hover svg,
+        .theme-toggle:hover svg {
+            fill: var(--link-hover-color);
+            stroke: var(--link-hover-color);
+        }
+
+        /* Filter Section */
+        .filter-section {
+            border: 2px solid var(--filter-border);
+            text-align: center;
+            background: var(--filter-bg);
+            margin: 0 auto;
+            max-width: calc(100% - 4px);
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .tag {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--tag-color);
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        .tag:hover {
+            background: var(--tag-hover-bg);
+        }
+
+        .tag.active {
+            background: var(--tag-active-bg);
+            color: var(--tag-active-color);
+        }
+
+        /* Projects Section */
+        .projects-section {
+            border: none;
+            min-height: 200px;
+        }
+
+        .projects-list {
+            list-style: none;
+        }
+
+        .project-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--project-border);
+            transition: opacity 0.3s ease;
+        }
+
+        .project-item:last-child {
+            border-bottom: none;
+        }
+
+        .project-item.hidden {
+            display: none;
+        }
+
+        .project-link {
+            color: var(--text-color);
+            text-decoration: none;
+            display: block;
+            padding: 2px 0;
+            font-size: 16px;
+            transition: color 0.2s ease;
+            line-height: 1.2;
+        }
+
+        .project-link:hover {
+            text-decoration: underline;
+            color: var(--text-bright);
+        }
+
+        .project-tags {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: -2px;
+            font-style: italic;
+            line-height: 1.2;
+        }
+
+        /* Additional variables for main page */
+        :root {
+            --filter-border: black;
+            --filter-bg: transparent;
+            --tag-color: black;
+            --tag-hover-bg: rgba(0, 0, 0, 0.1);
+            --tag-active-bg: black;
+            --tag-active-color: white;
+            --project-border: black;
+            --project-tag-color: black;
+        }
+
+        [data-theme="dark"] {
+            --filter-border: white;
+            --filter-bg: transparent;
+            --tag-color: white;
+            --tag-hover-bg: rgba(255, 255, 255, 0.1);
+            --tag-active-bg: white;
+            --tag-active-color: #1a1a1a;
+            --project-border: #444;
+            --project-tag-color: #999;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .header {
+                justify-content: center;
+                text-align: center;
+            }
+
+            .social-links {
+                justify-content: center;
+            }
+
+            .social-links a, 
+            .theme-toggle {
+                padding: 5px 7px;
+                font-size: 13px;
+            }
+
+            .tags {
+                gap: 6px;
+            }
+
+            .tag {
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+
+            .section {
+                padding: 12px;
+            }
+
+            .container {
+                gap: 15px;
+            }
+        }
+    </style>
+    
+    <script>
+        // Check theme preference immediately to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const isDarkMode = savedTheme ? savedTheme === 'dark' : true; // Default to dark
+            
+            if (isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="section header">
+            <h1 class="name">fshcat</h1>
+            <nav class="social-links">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <a href="https://github.com/yourusername" target="_blank" rel="noopener" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                </a>
+                <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener" aria-label="Twitter">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932L18.901 1.153ZM17.61 20.644h2.039L6.486 3.24H4.298L17.61 20.644Z"/>
+                    </svg>
+                </a>
+                <a href="https://bsky.app/yourhandle" target="_blank" rel="noopener" aria-label="Bluesky">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6.335 5.144c-1.654-1.199-4.335-2.127-4.335.826c0 .59.35 4.953.556 5.661c.713 2.463 3.13 2.75 5.444 2.369c-4.045.665-4.889 3.208-2.667 5.41c1.03 1.018 1.913 1.59 2.667 1.59c2 0 3.134-2.769 3.5-3.5c.333-.667.5-1.167.5-1.5c0 .333.167.833.5 1.5c.366.731 1.5 3.5 3.5 3.5c.754 0 1.637-.571 2.667-1.59c2.222-2.203 1.378-4.746-2.667-5.41c2.314.38 4.73.094 5.444-2.369c.206-.708.556-5.072.556-5.661c0-2.953-2.68-2.025-4.335-.826c-2.293 1.662-4.76 5.048-5.665 6.856c-.905-1.808-3.372-5.194-5.665-6.856z"/>
+                    </svg>
+                </a>
+                <a href="contact/">Contact</a>
+            </nav>
+        </header>
+
+        <!-- Filter Section -->
+        <section class="section filter-section">
+            <div class="tags" id="tags-container" role="group" aria-label="Project filters">
+                <!-- Tags will be generated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <main class="section projects-section">
+            <ul class="projects-list" id="projects-list" role="list">
+                <!-- Projects will be generated by JavaScript -->
+            </ul>
+        </main>
+    </div>
+
+    <script>
+        // Application state with localStorage integration
+        const AppState = {
+            isDarkMode: true, // Default to dark mode
+            activeTags: new Set(),
+            
+            // Initialize theme from localStorage
+            initTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                this.isDarkMode = savedTheme ? savedTheme === 'dark' : true;
+                this.setTheme(this.isDarkMode);
+            },
+            
+            setTheme(darkMode) {
+                this.isDarkMode = darkMode;
+                if (darkMode) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                }
+            },
+            
+            toggleTheme() {
+                this.setTheme(!this.isDarkMode);
+            }
+        };
+
+        // Project data - THIS WILL BE AUTOMATICALLY UPDATED BY update_index.py
+        const PROJECTS = [
+            {
+                title: "The Tao of Qwen",
+                url: "ttc-experiments/",
+                tags: ["LLMs", "AI"],
+                date: "2025-09-13"
+            }
+        
+        
+        
+
+
+        ];
+
+        // Get all unique tags, sorted alphabetically
+        const ALL_TAGS = [...new Set(PROJECTS.flatMap(project => project.tags))].sort();
+
+        // Theme management
+        const ThemeManager = {
+            init() {
+                AppState.initTheme();
+                this.setupThemeToggle();
+            },
+            
+            setupThemeToggle() {
+                const themeToggle = document.getElementById('theme-toggle');
+                
+                const sunIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>`;
+                
+                const moonIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>`;
+                
+                // Set initial icon
+                this.updateToggleIcon(themeToggle, sunIcon, moonIcon);
+                
+                // Add click handler
+                themeToggle.addEventListener('click', () => {
+                    AppState.toggleTheme();
+                    this.updateToggleIcon(themeToggle, sunIcon, moonIcon);
+                });
+            },
+            
+            updateToggleIcon(toggle, sunIcon, moonIcon) {
+                toggle.innerHTML = AppState.isDarkMode ? sunIcon : moonIcon;
+                toggle.setAttribute('aria-label', AppState.isDarkMode ? 'Switch to light mode' : 'Switch to dark mode');
+            }
+        };
+
+        // Tags management
+        const TagsManager = {
+            init() {
+                this.render();
+                this.setupEventListeners();
+            },
+            
+            render() {
+                const container = document.getElementById('tags-container');
+                container.innerHTML = '';
+                
+                ALL_TAGS.forEach(tag => {
+                    const tagElement = document.createElement('button');
+                    tagElement.className = 'tag';
+                    tagElement.textContent = tag;
+                    tagElement.setAttribute('aria-pressed', 'false');
+                    tagElement.dataset.tag = tag;
+                    container.appendChild(tagElement);
+                });
+            },
+            
+            setupEventListeners() {
+                const container = document.getElementById('tags-container');
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('tag')) {
+                        this.toggleTag(e.target.dataset.tag);
+                    }
+                });
+            },
+            
+            toggleTag(tag) {
+                if (AppState.activeTags.has(tag)) {
+                    AppState.activeTags.delete(tag);
+                } else {
+                    AppState.activeTags.add(tag);
+                }
+                
+                this.updateUI();
+                ProjectsManager.filter();
+            },
+            
+            updateUI() {
+                const tagElements = document.querySelectorAll('.tag');
+                tagElements.forEach(tagElement => {
+                    const isActive = AppState.activeTags.has(tagElement.dataset.tag);
+                    tagElement.classList.toggle('active', isActive);
+                    tagElement.setAttribute('aria-pressed', isActive.toString());
+                });
+            }
+        };
+
+        // Projects management
+        const ProjectsManager = {
+            init() {
+                this.render();
+            },
+            
+            render() {
+                const container = document.getElementById('projects-list');
+                container.innerHTML = '';
+                
+                PROJECTS.forEach(project => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'project-item';
+                    listItem.dataset.tags = project.tags.join(',');
+                    
+                    listItem.innerHTML = `
+                        <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+                            <a href="${project.url}" class="project-link">${project.title}</a>
+                            <time style="font-size: 14px; color: var(--text-color); opacity: 0.7;">${project.date}</time>
+                        </div>
+                        <div class="project-tags">${project.tags.join(', ')}</div>
+                    `;
+                    
+                    container.appendChild(listItem);
+                });
+            },
+            
+            filter() {
+                const projectItems = document.querySelectorAll('.project-item');
+                
+                projectItems.forEach(item => {
+                    const projectTags = item.dataset.tags.split(',');
+                    
+                    // Show all projects if no tags are active
+                    if (AppState.activeTags.size === 0) {
+                        item.classList.remove('hidden');
+                    } else {
+                        // Show project if it has ALL active tags (AND logic)
+                        const hasAllTags = [...AppState.activeTags].every(tag => projectTags.includes(tag));
+                        item.classList.toggle('hidden', !hasAllTags);
+                    }
+                });
+            }
+        };
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            ThemeManager.init();
+            TagsManager.init();
+            ProjectsManager.init();
+        });
+    </script>
+</body>
+</html>

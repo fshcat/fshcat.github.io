@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - fshcat</title>
+    <meta name="description" content="{{ description }}">
+    <meta name="author" content="fshcat">
+    <meta name="keywords" content="{{ tags_string }}">
+    
+    <!-- Font imports -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="../styles/main.css">
+    
+    <!-- Theme detection -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const isDarkMode = savedTheme ? savedTheme === 'dark' : true;
+            if (isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <header class="header">
+        <a href="../" class="site-title">fshcat</a>
+        <nav class="nav-links">
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+            <a href="../" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+            </a>
+            <a href="../contact">Contact</a>
+        </nav>
+    </header>
+    
+    <main class="content-wrapper">
+        <div class="content">
+            <div class="project-header">
+                <h1 class="project-title" id="top">{{ title }}</h1>
+                <div class="project-meta">
+                    <time>{{ formatted_date }}</time>
+                    <div class="project-tags">
+                        {{ tags_html }}
+                    </div>
+                </div>
+            </div>
+
+            <aside class="toc-sidebar">
+                {{ toc }}
+            </aside>
+
+            <article class="article-content">
+                {{ content }}
+            </article>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <p><a href="../">← Back to main page</a></p>
+    </footer>
+    
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+        const moonIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        
+        function updateThemeIcon() {
+            const isDarkMode = document.documentElement.hasAttribute('data-theme');
+            themeToggle.innerHTML = isDarkMode ? sunIcon : moonIcon;
+        }
+        
+        updateThemeIcon();
+        
+        themeToggle.addEventListener('click', () => {
+            const isDarkMode = document.documentElement.hasAttribute('data-theme');
+            if (isDarkMode) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+            updateThemeIcon();
+        });
+        
+        // TOC Active Section Highlighting and Sticky Behavior
+        document.addEventListener('DOMContentLoaded', () => {
+            const tocSidebar = document.querySelector('.toc-sidebar');
+            const tocLinks = document.querySelectorAll('.toc-list a');
+            const headers = document.querySelectorAll('h1[id], h2[id], h3[id]');
+            const header = document.querySelector('.header');
+
+            if (!tocSidebar || tocLinks.length === 0 || headers.length === 0) return;
+
+            let isCurrentlySticky = false; // Track state to avoid unnecessary changes
+
+            function updateActiveLink() {
+                let current = '';
+                
+                headers.forEach(header => {
+                    const rect = header.getBoundingClientRect();
+                    if (rect.top <= 100) {
+                        current = header.getAttribute('id');
+                    }
+                });
+                
+                tocLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+            
+            // Sticky TOC behavior
+            function updateStickyToc() {
+                if (window.innerWidth <= 1024) {
+                    // Reset sticky state on mobile
+                    if (isCurrentlySticky) {
+                        tocSidebar.classList.remove('sticky');
+                        tocSidebar.style.left = '';
+                        isCurrentlySticky = false;
+                    }
+                    return;
+                }
+
+                const headerRect = header.getBoundingClientRect();
+                const headerBottom = headerRect.bottom;
+                const shouldBeSticky = headerBottom <= 0;
+
+                if (shouldBeSticky && !isCurrentlySticky) {
+                    // Calculate the exact left position before making it sticky
+                    const currentRect = tocSidebar.getBoundingClientRect();
+                    const currentLeft = currentRect.left;
+
+                    tocSidebar.classList.add('sticky');
+                    tocSidebar.style.left = currentLeft + 'px';
+                    isCurrentlySticky = true;
+                } else if (!shouldBeSticky && isCurrentlySticky) {
+                    tocSidebar.classList.remove('sticky');
+                    tocSidebar.style.left = ''; // Reset to CSS value
+                    isCurrentlySticky = false;
+                }
+            }
+
+            // Update on scroll
+            let ticking = false;
+            function onScroll() {
+                if (!ticking) {
+                    requestAnimationFrame(() => {
+                        updateActiveLink();
+                        updateStickyToc();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }
+            
+            window.addEventListener('scroll', onScroll);
+            updateActiveLink(); // Initial update
+            updateStickyToc(); // Initial sticky state
+
+            // Update sticky behavior on resize
+            window.addEventListener('resize', () => {
+                // Reset sticky state and recalculate
+                if (isCurrentlySticky) {
+                    tocSidebar.classList.remove('sticky');
+                    tocSidebar.style.left = '';
+                    isCurrentlySticky = false;
+                    // Recalculate on next frame
+                    requestAnimationFrame(updateStickyToc);
+                } else {
+                    updateStickyToc();
+                }
+            });
+            
+            // Smooth scrolling for TOC links
+            tocLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    const target = document.getElementById(targetId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Update hash without scrolling
+                        setTimeout(() => {
+                            history.pushState(null, null, '#' + targetId);
+                        }, 100);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
